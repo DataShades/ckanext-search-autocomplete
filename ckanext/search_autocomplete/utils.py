@@ -92,7 +92,8 @@ def _datasets_by_terms(
     if ignore_synonyms:
         fq += " title_ngram:({0})"
     else:
-        fq += " title:({0}) OR title_ngram:({0})"
+        # add parenthesis to narrow down the scope of OR
+        fq += " (title:({0}) OR title_ngram:({0}))"
 
     return [
         tk.get_action("package_search")(

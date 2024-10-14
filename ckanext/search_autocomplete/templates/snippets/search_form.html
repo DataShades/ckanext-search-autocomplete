@@ -6,7 +6,8 @@
         <div class="search-autocomplete-wrapper"
              data-module="ckanext-search-autocomplete"
              data-module-suggestion-box="#search-autocomplete--suggestion-box"
-             data-module-autocomplete-input="#field-giant-search" >
+             data-module-autocomplete-input="#field-giant-search"
+             data-module-locale="{{ h.lang() }}">
             {{ super() }}
         </div>
     {% else %}

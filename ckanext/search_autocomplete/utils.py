@@ -12,7 +12,9 @@ from ckanext.search_autocomplete.interfaces import ISearchAutocomplete
 
 CONFIG_AUTOCOMPLETE_LIMIT = "ckanext.search_autocomplete.autocomplete_limit"
 CONFIG_IGNORE_SYNONYMS = "ckanext.search_autocomplete.ignore_synonyms"
-CONFIG_INCLUDE_HARVEST_PORTAL = "ckanext.search_autocomplete.include_harvest_portal"
+CONFIG_INCLUDE_HARVEST_PORTAL = (
+    "ckanext.search_autocomplete.include_harvest_portal"
+)
 
 DEFAULT_AUTOCOMPLETE_LIMIT = 6
 DEFAULT_IGNORE_SYNONYMS = False
@@ -34,7 +36,9 @@ def _get_autocomplete_limit():
     )
 
 
-def autocomplete_datasets(terms: List[str], fq: Optional[str]) -> List[Suggestion]:
+def autocomplete_datasets(
+    terms: List[str], fq: Optional[str], locale: str
+) -> List[Suggestion]:
     """Return limited number of autocomplete suggestions."""
     combined, *others = _datasets_by_terms(terms, fq, include_combined=True)
 
@@ -50,19 +54,35 @@ def autocomplete_datasets(terms: List[str], fq: Optional[str]) -> List[Suggestio
         if item not in combined
     ]
 
-    include_harvest = tk.asbool(tk.config.get(CONFIG_INCLUDE_HARVEST_PORTAL, DEFAULT_INCLUDE_HARVEST_PORTAL))
+    include_harvest = tk.asbool(
+        tk.config.get(
+            CONFIG_INCLUDE_HARVEST_PORTAL, DEFAULT_INCLUDE_HARVEST_PORTAL
+        )
+    )
+
     results = []
+
     for item in combined + other[: _get_autocomplete_limit() - len(combined)]:
-        harvested = tk.h.get_pkg_dict_extra(item, "harvest_portal")
-        if not include_harvest and harvested is not None:
+        if not include_harvest:
             continue
-        results.append(Suggestion(
-            href=tk.h.url_for("dataset.read", id=item["name"]) if harvested is None else
-                tk.h.get_pkg_dict_extra(item, "harvest_url"),
-            label=item["title"],
-            type="Dataset",
-            count=1,
-        ))
+
+        if include_harvest:
+            is_harvested = tk.h.get_pkg_dict_extra(item, "harvest_portal")
+
+        results.append(
+            Suggestion(
+                href=(
+                    tk.h.url_for(
+                        "dataset.read", id=item["name"], locale=locale
+                    )
+                    if not is_harvested
+                    else tk.h.get_pkg_dict_extra(item, "harvest_url")
+                ),
+                label=item["title"],
+                type="Dataset",
+                count=1,
+            )
+        )
     return results
 
 
@@ -71,7 +91,6 @@ def _datasets_by_terms(
     fq: Optional[str],
     include_combined: bool = False,
     limit: int = _get_autocomplete_limit(),
-
 ) -> List[List[Dict[str, str]]]:
     """Get list of search result iterables.
 
@@ -86,7 +105,9 @@ def _datasets_by_terms(
 
         terms = [" ".join(terms)] + terms
 
-    ignore_synonyms = tk.asbool(tk.config.get(CONFIG_IGNORE_SYNONYMS, DEFAULT_IGNORE_SYNONYMS))
+    ignore_synonyms = tk.asbool(
+        tk.config.get(CONFIG_IGNORE_SYNONYMS, DEFAULT_IGNORE_SYNONYMS)
+    )
 
     fq = fq or ""
     if ignore_synonyms:
@@ -109,7 +130,9 @@ def _datasets_by_terms(
     ]
 
 
-def autocomplete_categories(terms: List[str], fq: Optional[str]) -> List[Suggestion]:
+def autocomplete_categories(
+    terms: List[str], fq: Optional[str], locale: str
+) -> List[Suggestion]:
     facets = tk.get_action("package_search")(
         {},
         {
@@ -119,9 +142,11 @@ def autocomplete_categories(terms: List[str], fq: Optional[str]) -> List[Suggest
         },
     )["search_facets"]
 
-    categories: List[List[Dict[str, Any]]] = []
+    categories: List[List[Suggestion]] = []
+
     for facet in facets.values():
-        group: List[Tuple[int, Dict[str, Any]]] = []
+        group: List[Tuple[int, Suggestion]] = []
+
         for item in facet["items"]:
             # items with highest number of matches will have higher priority in
             # suggestion list
@@ -137,7 +162,8 @@ def autocomplete_categories(terms: List[str], fq: Optional[str]) -> List[Suggest
                     matches,
                     Suggestion(
                         href=tk.h.url_for(
-                            "dataset.search", **{facet["title"]: item["name"]}
+                            "dataset.search",
+                            **{facet["title"]: item["name"], "locale": locale},
                         ),
                         label=item["display_name"],
                         type=get_categories()[facet["title"]],
@@ -145,6 +171,7 @@ def autocomplete_categories(terms: List[str], fq: Optional[str]) -> List[Suggest
                     ),
                 )
             )
+
         categories.append(
             [
                 item
@@ -153,6 +180,7 @@ def autocomplete_categories(terms: List[str], fq: Optional[str]) -> List[Suggest
                 )
             ]
         )
+
     return list(
         sorted(
             itertools.islice(

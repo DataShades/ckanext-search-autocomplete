@@ -6,7 +6,7 @@ ckan.module('ckanext-search-autocomplete', function ($) {
     }
 
     function formatLabel(type, q, item) {
-        var text = $('<span>', {html: item.label}).text();
+        var text = $('<span>', { html: item.label }).text();
         switch (type) {
             case 'datasets':
                 return $('<span>', {
@@ -20,8 +20,8 @@ ckan.module('ckanext-search-autocomplete', function ($) {
                 });
                 break;
             case 'categories':
-                return $('<span>', {text: text}).append(
-                    $('<span>', {text: '(' + item.type + ')'}).addClass('muted')
+                return $('<span>', { text: text }).append(
+                    $('<span>', { text: '(' + item.type + ')' }).addClass('muted')
                 );
                 break;
             default:
@@ -39,6 +39,7 @@ ckan.module('ckanext-search-autocomplete', function ($) {
             delay: 400,
             autocompleteInput: null,
             suggestionBox: null,
+            locale: null,
         },
         setup: function () {
             this.input = this.$(this.options.autocompleteInput);
@@ -145,7 +146,7 @@ ckan.module('ckanext-search-autocomplete', function ($) {
                 var q = self.queries.splice(0).pop();
                 self.sandbox.client.call(
                     'POST',
-                    'search_autocomplete', {q: q, fq: self.options.fq},
+                    'search_autocomplete', { q: q, fq: self.options.fq, locale: self.options.locale },
                     function (data) {
                         self.isPending = false;
                         self.el.removeClass('pending-suggestions');
@@ -181,7 +182,7 @@ ckan.module('ckanext-search-autocomplete', function ($) {
                     .prevObject.append(
                         data[key].map(function (item) {
                             return $('<li>').append(
-                                $('<a>', {html: formatLabel(key, q, item), href: item.href})
+                                $('<a>', { html: formatLabel(key, q, item), href: item.href })
                             );
                         })
                     );

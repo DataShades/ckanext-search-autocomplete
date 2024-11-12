@@ -102,9 +102,13 @@ ckan.module('ckanext-search-autocomplete', function ($) {
         _onBlur: function () {
             var self = this;
             this.cleanSchedule();
-            // wait a bit if user wants to click on a link from the
-            // suggestion box
+            // wait a bit if the user wants to interact with the suggestion box
             setTimeout(function () {
+                var activeElement = document.activeElement;
+                if (self.el[0].contains(activeElement)) {
+                    // Focus is within the module (input or suggestion box), do not hide
+                    return;
+                }
                 self.dropSuggestionList();
             }, 600);
         },

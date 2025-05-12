@@ -109,7 +109,7 @@ def _datasets_by_terms(
         tk.config.get(CONFIG_IGNORE_SYNONYMS, DEFAULT_IGNORE_SYNONYMS)
     )
 
-    fq = fq or ""
+    fq = "" if fq is None else str(fq)
     if ignore_synonyms:
         fq += " title_ngram:({0})"
     else:
